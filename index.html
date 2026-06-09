@@ -684,7 +684,7 @@ function renderArchive() {
   const arr = data[mode].archive;
 
   if(arr.length === 0) {
-    list.innerHTML = `<div style="text-align:center; color:var(--text-sub); padding:40px 20px; font-weight: 700; border: 2px dashed var(--card-border); border-radius: var(--radius-card); margin-top:20px;">Arsip kosong.</div>`;
+    list.innerHTML = `<div style="text-align:center; color:var(--text-sub); padding:40px 20px; font-weight: 800; border: 2px dashed var(--card-border); border-radius: var(--radius-card); margin-top:20px;">Arsip kosong.</div>`;
     return;
   }
   
@@ -696,12 +696,36 @@ function renderArchive() {
     folderDiv.className = 'archive-folder';
     folderDiv.style.marginBottom = '24px';
     
-    folderDiv.innerHTML = `
-      <div style="background:var(--success); border: 2px solid var(--success-shadow); box-shadow: 0 4px 0 var(--success-shadow); padding:16px 20px; border-radius:var(--radius-card); color:white; display:flex; justify-content:space-between; margin-bottom:16px;">
+    // --- TOMBOL MAP BULANAN (BISA DIKLIK) ---
+    const headerDiv = document.createElement('div');
+    headerDiv.style.cssText = `background:var(--success); border: 2px solid var(--success-shadow); box-shadow: 0 4px 0 var(--success-shadow); padding:16px 20px; border-radius:var(--radius-card); color:white; display:flex; justify-content:space-between; align-items:center; cursor:pointer; position:relative; z-index:2; transition: transform 0.1s; user-select: none;`;
+    
+    headerDiv.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="chevron" style="transition: transform 0.3s; font-size:12px;">▼</span>
         <span style="font-weight:800; font-size:16px;">📁 ${folder.periode}</span>
-        <span style="font-weight:900; font-size:16px;">Rp ${fmt(folder.total_rp)}</span>
       </div>
+      <span style="font-weight:900; font-size:16px;">Rp ${fmt(folder.total_rp)}</span>
     `;
+
+    // Efek membal saat diklik
+    headerDiv.onmousedown = () => { headerDiv.style.transform = 'translateY(4px)'; headerDiv.style.boxShadow = '0 0 0 transparent'; };
+    headerDiv.onmouseup = () => { headerDiv.style.transform = 'translateY(0)'; headerDiv.style.boxShadow = '0 4px 0 var(--success-shadow)'; };
+    headerDiv.onmouseleave = () => { headerDiv.style.transform = 'translateY(0)'; headerDiv.style.boxShadow = '0 4px 0 var(--success-shadow)'; };
+    
+    folderDiv.appendChild(headerDiv);
+
+    // --- BUNGKUSAN KONTEN RINCIAN ---
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'archive-content';
+    contentDiv.style.cssText = `display: none; padding-top: 16px;`; // Disembunyikan awalnya
+    
+    // Logika Buka/Tutup saat diklik
+    headerDiv.onclick = () => {
+      const isHidden = contentDiv.style.display === 'none';
+      contentDiv.style.display = isHidden ? 'block' : 'none';
+      headerDiv.querySelector('.chevron').style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    };
     
     folder.items.forEach(it => {
       const div = document.createElement('div');
@@ -719,8 +743,10 @@ function renderArchive() {
           <span style="font-weight:800; color:var(--text-main);">Rp ${fmt(it.nom * it.qty)}</span>
         </div>
       `;
-      folderDiv.appendChild(div);
+      contentDiv.appendChild(div);
     });
+    
+    folderDiv.appendChild(contentDiv);
     fragment.appendChild(folderDiv);
   });
 
@@ -735,6 +761,8 @@ function searchArchive() {
 
   folders.forEach(folder => {
     const items = folder.querySelectorAll('.archive-item');
+    const contentDiv = folder.querySelector('.archive-content');
+    const chevron = folder.querySelector('.chevron');
     let foundInFolder = false;
     
     items.forEach(el => {
@@ -747,12 +775,24 @@ function searchArchive() {
       }
     });
     
-    folder.children[0].style.display = foundInFolder ? 'flex' : 'none';
+    folder.style.display = foundInFolder ? 'block' : 'none';
+
+    // Otomatis buka map jika pencarian diisi dan ada hasil, tutup lagi jika kosong
+    if (q !== '') {
+      if (foundInFolder) {
+        contentDiv.style.display = 'block';
+        chevron.style.transform = 'rotate(180deg)';
+      }
+    } else {
+      contentDiv.style.display = 'none';
+      chevron.style.transform = 'rotate(0deg)';
+    }
   });
 
   const emptyMsg = document.getElementById('archiveEmptyMsg');
   if (emptyMsg) emptyMsg.style.display = (!foundAny && folders.length > 0) ? 'block' : 'none';
 }
+
 
 function clearArchive() {
   showDialog("Hapus Arsip?", "Data riwayat bakal dihapus beneran nih. Yakin?", true, () => {
