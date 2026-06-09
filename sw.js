@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pengelola-uang-cache-v8';
+const CACHE_NAME = 'pengelola-uang-cache-v9';
 const urlsToCache = [
   './',
   './index.html',
